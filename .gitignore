@@ -1,0 +1,12 @@
+# Access バイナリは絶対にコミットしない
+*.accdb
+*.laccdb
+*.mdb
+*.ldb
+*.accde
+*.accdr
+
+# バックアップ・一時ファイル
+*.bak
+~$*
+*.tmp
