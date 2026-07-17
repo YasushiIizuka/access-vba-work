@@ -45,14 +45,19 @@ Public Sub ImportExcelBatch()
 
     ' --- 選択した全ファイルをテンポラリへ積み上げ ---
     Dim i As Long
-    Dim okCount As Long
+    Dim okFiles As Long      ' 取り込めたファイル数
+    Dim totalRows As Long    ' 取り込めた合計行数
+    Dim addedRows As Long    ' 1ファイル分の行数
     Dim filePath As String
 
     For i = 1 To fd.SelectedItems.Count
         filePath = fd.SelectedItems(i)
 
-        If Not ImportOneFile(filePath) Then
-            MsgBox okCount & " 件はテンポラリに取り込み済みです。" & vbCrLf & vbCrLf & _
+        addedRows = ImportOneFile(filePath)
+        If addedRows < 0 Then
+            MsgBox "ここまで " & okFiles & " ファイル（" & _
+                Format(totalRows, "#,##0") & " 行）はテンポラリに取り込み済みです。" & _
+                vbCrLf & vbCrLf & _
                 "以下のファイルでエラーが発生したため中断しました。" & vbCrLf & _
                 filePath & vbCrLf & vbCrLf & _
                 "エラー内容: " & mLastError & vbCrLf & vbCrLf & _
@@ -64,10 +69,12 @@ Public Sub ImportExcelBatch()
         End If
 
         MoveToDone filePath
-        okCount = okCount + 1
+        okFiles = okFiles + 1
+        totalRows = totalRows + addedRows
     Next i
 
-    MsgBox okCount & " 件のファイルをテンポラリに取り込みました。" & vbCrLf & _
+    MsgBox okFiles & " ファイル（合計 " & Format(totalRows, "#,##0") & _
+        " 行）をテンポラリに取り込みました。" & vbCrLf & _
         "続けて反映処理を実行してください。", _
         vbInformation, "取込完了"
     Exit Sub
@@ -79,20 +86,24 @@ ClearErr:
 End Sub
 
 ' ===== 1ファイル分の取込（テンポラリへ追記） =====
-Private Function ImportOneFile(ByVal filePath As String) As Boolean
+' 戻り値: 取り込んだ行数（エラー時は -1）
+Private Function ImportOneFile(ByVal filePath As String) As Long
     On Error GoTo ErrHandler
+
+    Dim beforeCount As Long
+    beforeCount = DCount("*", TEMP_TABLE)
 
     ' ★引数（形式・HasFieldNames・Range）は既存の TransferSpreadsheet と
     '   必ず同じにすること。下は「1行目が見出し・シート全体」の例
     DoCmd.TransferSpreadsheet acImport, acSpreadsheetTypeExcel12Xml, _
         TEMP_TABLE, filePath, True
 
-    ImportOneFile = True
+    ImportOneFile = DCount("*", TEMP_TABLE) - beforeCount
     Exit Function
 
 ErrHandler:
     mLastError = Err.Number & ": " & Err.Description
-    ImportOneFile = False
+    ImportOneFile = -1
 End Function
 
 ' ===== 取込済みファイルをサブフォルダへ移動 =====
