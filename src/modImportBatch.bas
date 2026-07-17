@@ -8,8 +8,8 @@ Option Explicit
 '   1. ファイル選択ダイアログで Excel を複数選択（Ctrl+クリック）
 '   2. テンポラリテーブルを最初に1回だけ空にする
 '   3. 選択した全ファイルを順に TransferSpreadsheet でテンポラリへ追記
-'   4. 成功したファイルは「取込済み」サブフォルダへ移動（二重取込の防止）
-'   5. 結果を表示して終了（本番系への反映は既存のクエリ処理で行う）
+'   4. 結果（ファイル数＋合計行数）を表示して終了
+'      （本番系への反映は既存のクエリ処理で行う）
 '
 ' ★★★ 貼り付け後にここだけ直す ★★★
 '   ・TEMP_TABLE 定数（テンポラリテーブル名）
@@ -18,9 +18,6 @@ Option Explicit
 
 ' ★テンポラリテーブル名（既存の取込先テーブル名に変更）
 Private Const TEMP_TABLE As String = "<<テンポラリテーブル名>>"
-
-' 処理済みファイルの移動先サブフォルダ名（元ファイルと同じ場所に自動作成）
-Private Const DONE_FOLDER As String = "取込済み"
 
 ' 直近のエラー内容（結果表示用）
 Private mLastError As String
@@ -68,7 +65,6 @@ Public Sub ImportExcelBatch()
             Exit Sub
         End If
 
-        MoveToDone filePath
         okFiles = okFiles + 1
         totalRows = totalRows + addedRows
     Next i
@@ -105,34 +101,3 @@ ErrHandler:
     mLastError = Err.Number & ": " & Err.Description
     ImportOneFile = -1
 End Function
-
-' ===== 取込済みファイルをサブフォルダへ移動 =====
-Private Sub MoveToDone(ByVal filePath As String)
-    On Error GoTo ErrHandler   ' 移動失敗は取込成功を妨げない（警告のみ）
-
-    Dim fso As Object
-    Set fso = CreateObject("Scripting.FileSystemObject")
-
-    Dim doneDir As String
-    doneDir = fso.GetParentFolderName(filePath) & "\" & DONE_FOLDER
-    If Not fso.FolderExists(doneDir) Then fso.CreateFolder doneDir
-
-    Dim destPath As String
-    destPath = doneDir & "\" & fso.GetFileName(filePath)
-
-    ' 同名ファイルが既にある場合は日時を付けて退避
-    If fso.FileExists(destPath) Then
-        destPath = doneDir & "\" & _
-            fso.GetBaseName(filePath) & "_" & _
-            Format(Now, "yyyymmdd_hhnnss") & "." & _
-            fso.GetExtensionName(filePath)
-    End If
-
-    fso.MoveFile filePath, destPath
-    Exit Sub
-
-ErrHandler:
-    MsgBox "取込は成功しましたが、ファイルの移動に失敗しました。" & vbCrLf & _
-        filePath & vbCrLf & _
-        "二重取込を防ぐため、手動で移動してください。", vbExclamation
-End Sub
