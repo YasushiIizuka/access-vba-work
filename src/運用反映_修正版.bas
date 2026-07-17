@@ -4,9 +4,9 @@
 '      最後に「追加◯件・重複スキップ◯件」を1回だけ表示する
 '   2. 重複の内訳（受注番号・商品コード）は先頭20件まで結果表示に含める
 '   3. コメントアウトされていた On Error GoTo Err_Handler を有効化
-'   4. 登録日を Now()（時刻付き）から Date（日付のみ）に変更。
+'   4. 登録日・更新日を Now()（時刻付き）から Date（日付のみ）に変更。
 '      クエリ等で「登録日 = 日付」の単純比較ができるようにするため。
-'      既存データの時刻除去は 一括修正_登録日時刻除去.bas を1回実行する
+'      既存データの時刻除去は 一括修正_時刻除去.bas を1回実行する
 Option Compare Database
 Option Explicit
 
@@ -100,7 +100,7 @@ Private Sub btn反映_Click()
             End If
 
             rsDest![登録日] = Date   '日付のみ（時刻は持たない）
-            rsDest![更新日] = Now()
+            rsDest![更新日] = Date   '日付のみ（時刻は持たない）
             rsDest.Update
             addedCount = addedCount + 1
         Else
