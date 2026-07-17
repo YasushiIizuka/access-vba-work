@@ -36,8 +36,10 @@
 Private Const SUB_LIST As String = "F_SUB_特定5講座"
 Private Const SUB_CHECK As String = "F_SUB_特定5講座_チェック状況"
 
-' ★ドロップダウンの日付一覧を作る元（登録日を持つテーブルまたはクエリ）
-Private Const DATE_SOURCE As String = "<<T_WORCSまたは絞り込みクエリ名>>"
+' ★ドロップダウンの日付一覧を作る元。
+'   複数テーブルを結合したクエリを指定すると、双方に「登録日」がある場合に
+'   「複数のテーブルを参照しました」エラーになるため、テーブルを直接指定する
+Private Const DATE_SOURCE As String = "T_WORCS"
 
 Private Sub Form_Load()
     'ドロップダウンに「データがある登録日」を新しい順で一覧表示
