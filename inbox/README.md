@@ -20,9 +20,9 @@
 
 ```
 SC（サービスセンター）分: inbox/SC/モジュール名.bas
-債権管理課分:             inbox/債権管理課/モジュール名.bas
+SK（債権管理課）分:       inbox/SK/モジュール名.bas
 例: inbox/SC/mod取込処理.bas
-    inbox/債権管理課/mod督促処理.bas
+    inbox/SK/mod督促処理.bas
 ```
 
 - ファイル名の入力欄に `SC/mod〜.bas` のように **スラッシュ区切りで
