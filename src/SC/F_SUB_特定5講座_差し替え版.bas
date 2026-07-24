@@ -9,6 +9,8 @@
 '   3. 選択_AfterUpdate: チェックを保存して再読込 → チェックした行が一番下に落ちる
 '      ※選択チェックボックスの「更新後処理」が [イベント プロシージャ] に
 '        なっていることを確認すること
+'      ※ヘッダーの並べ替えで [選択] 優先が消されても、次のチェック操作時に
+'        「選択を最優先＋ユーザーの並び順」へ自動で組み直す（ApplySelectionOrder）
 '   4. Form_Current: チェック状況サブフォームへのリンク張り直し
 '      （リンクの自動追従が働かないため。0件時は何もしない。
 '        0件時の表示制御はメインフォーム側の RequerySubForms が行う）
@@ -22,11 +24,35 @@ Private Const CHECKED_FORE_COLOR As Long = &HFFFFFF   '文字は白
 
 Private Sub Form_Load()
     '未チェック→チェック済みの順（チェック済みが下）、同グループ内は No 順
-    Me.OrderBy = "[選択] DESC, [No]"
-    Me.OrderByOn = True
+    ApplySelectionOrder
 
     'チェック済み行の色つけ（条件付き書式をコードで設定）
     SetupRowFormat
+End Sub
+
+'「選択を最優先、その後ろにユーザーが選んだ並び順」で並べ替えを組み直す
+'（ヘッダーの並べ替えは OrderBy を上書きして [選択] DESC を消してしまうため、
+'  現在の並び順から選択の指定を除いて先頭に付け直す）
+Private Sub ApplySelectionOrder()
+    Dim parts() As String
+    Dim i As Integer
+    Dim userOrder As String
+
+    'ユーザーが選んだ並び順を残す（選択に関する指定だけ取り除く）
+    If Nz(Me.OrderBy, "") <> "" Then
+        parts = Split(Me.OrderBy, ",")
+        For i = LBound(parts) To UBound(parts)
+            If InStr(parts(i), "選択") = 0 Then
+                userOrder = userOrder & ", " & Trim$(parts(i))
+            End If
+        Next i
+    End If
+
+    '並べ替え指定が何も無ければ No 順を既定にする
+    If userOrder = "" Then userOrder = ", [No]"
+
+    Me.OrderBy = "[選択] DESC" & userOrder
+    Me.OrderByOn = True
 End Sub
 
 '選択＝True の行に色を付ける条件付き書式を全テキストボックスに設定する
@@ -48,8 +74,10 @@ Private Sub SetupRowFormat()
 End Sub
 
 Private Sub 選択_AfterUpdate()
-    'チェックを保存してから再読込 → 並べ替えが効いて行が下に落ちる
+    'チェックを保存 → 選択優先の並べ替えを組み直してから再読込
+    '（ヘッダーで並べ替えた後でも、チェック操作の瞬間に「チェック済みが下」へ戻る）
     If Me.Dirty Then Me.Dirty = False
+    ApplySelectionOrder
     Me.Requery
 End Sub
 
