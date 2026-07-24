@@ -8,6 +8,16 @@
 '     日付を切り替えたときも必ずここを通るので、開いた直後の0件にも効く
 '   ・非表示にする前に cbo対象日 へフォーカスを退避
 '     （フォーカスのあるコントロールを含むサブフォームは非表示にできないため）
+'   ・btn並び順リセット_Click を追加（2026-07-24）: ヘッダーで並べ替えた後に
+'     既定の並び（未チェック上・No 順・チェック済み下）へ戻すボタン
+'
+' ★★★ 客先での準備（並び順リセットボタン）★★★
+'   1. F_特定5講座 のヘッダー（cbo対象日 の近くなど）にコマンドボタンを1つ追加
+'      （ウィザードが出たらキャンセル）
+'   2. ボタンのプロパティを設定:
+'        名前:     btn並び順リセット
+'        標題:     並び順リセット
+'   3. ボタンの「クリック時」イベントに [イベント プロシージャ] を選択
 Option Compare Database
 Option Explicit
 
@@ -24,6 +34,20 @@ Private Const DATE_SOURCE As String = "T_WORCS"
 
 Private Sub cbo対象日_AfterUpdate()
     RequerySubForms
+End Sub
+
+
+'ヘッダーで並べ替えた後、既定の並び（未チェック上・No順・チェック済み下）に戻す
+Private Sub btn並び順リセット_Click()
+    On Error GoTo ErrHandler
+    Me(SUB_LIST).Form.ResetOrder
+    Exit Sub
+
+ErrHandler:
+    MsgBox "並び順のリセットに失敗しました。" & vbCrLf & _
+        "明細サブフォームに ResetOrder（差し替え版のコード）が" & vbCrLf & _
+        "貼り付けられているか確認してください。" & vbCrLf & _
+        "エラー内容: " & Err.Number & ": " & Err.Description, vbExclamation
 End Sub
 
 
