@@ -39,7 +39,7 @@ Private Sub Form_Load()
         strAllData = strAllData & rs![商品名称] & "（" & rs![商品コード] & "）　"
         rs.MoveNext
     Loop
-    Me.lbl対象講座.Caption = Me.lbl対象講座.Caption & strAllData
+    Me.lbl対象講座.Caption = "【対象講座】" & strAllData
 
     rs.Close
     Set rs = Nothing
