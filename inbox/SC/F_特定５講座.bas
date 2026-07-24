@@ -1,3 +1,18 @@
+' 貼り付け先: F_SUB_特定5講座_チェック状況 のフォームモジュール【全文差し替え】
+'   既存のコードを Ctrl+A で全選択して削除してから、このファイル全文を貼り付ける。
+'   貼り付け後にデバッグ→コンパイルでエラーがないことを確認する。
+'
+' 2026-07-24 の変更点（それ以外は客先の現行コードのまま）:
+'   1. Form_BeforeUpdate を新設: キー値（No）が空のまま保存しようとしたら
+'      分かりやすいメッセージを出して保存を中止（入力は破棄）
+'   2. btn再注レター作成 の確認ダイアログのタイトルを「再注レター?」に修正
+'      （「代引きレター?」になっていた）
+'   3. Form_BeforeInsert の登録日・更新日を Now() → Date に変更
+'      （登録日・更新日は日付のみで統一する方針に合わせる）
+'   4. PassCreate のコメントを実挙動（7文字）に合わせて修正。桁数は変更していない
+'      （既に発行済みのパスワードとの整合を優先。6桁が要件なら For i = 1 To 6 に変更）
+'   5. コンボ排他制御（UpdateLetterComboState ほか）を含む。
+'      検証時に入れた Exit Sub は入っていない状態
 Option Compare Database
 Option Explicit
 
@@ -6,14 +21,14 @@ Private Function PassCreate() As String
     Dim i As Integer
     Dim pos As Integer
     Dim newPassword As String
-    
+
     '間違いやすい文字は除く
     allowedChars = "ABDEFGHJMNQRTUYabdefghjmnrtuy"
-    
+
     '乱数初期化
     Randomize
-    
-    '6桁のパスワード生成
+
+    '7文字のパスワード生成（0 To 6 で7回ループ。実運用に合わせて挙動は維持）
     newPassword = ""
     For i = 0 To 6
         pos = Int(Rnd * Len(allowedChars)) + 1
@@ -26,7 +41,7 @@ End Function
 Private Sub btnPassCreate_Click()
     'テキストボックスに代入
     Me.パスワード生成.Value = PassCreate
-    
+
 End Sub
 
 Private Sub btn再注レター作成_Click()
@@ -38,16 +53,16 @@ Private Sub btn再注レター作成_Click()
     Dim 未成年FLG As Boolean
     Dim 重複件数 As Long
     Dim パスワード As String
-    
+
     重複件数 = DCount("*", "T_再注レター", "[No] = " & Me!No & " AND [印刷済みFLG] = False")
-    
+
     If 重複件数 > 0 Then
         MsgBox "このデータはすでに印刷待ちに登録されています。", vbExclamation, "登録重複"
         Exit Sub
     End If
-     
+
     再注レター返送期限 = Date + 10 '今日日付＋10日
-    
+
     If Parent![F_SUB_特定5講座].Form![ショップ区分] = "通教" Then
         事業部 = "U-CAN"
         事業部TEL = "03-5388-6111"
@@ -55,7 +70,7 @@ Private Sub btn再注レター作成_Click()
         事業部 = "ライフ＆カルチャー"
         事業部TEL = "0120-552-476"
     End If
-    
+
     If IsNull(Parent![F_SUB_特定5講座].Form![年齢]) Then
         未成年FLG = False
     ElseIf Parent![F_SUB_特定5講座].Form![年齢] < 18 Then
@@ -64,7 +79,7 @@ Private Sub btn再注レター作成_Click()
         未成年FLG = False
     End If
     パスワード = PassCreate
-    
+
     msg = "【確認】次の情報で再注レター印刷情報を登録します" & vbCrLf & vbCrLf
     msg = msg & "No：" & Parent![F_SUB_特定5講座].Form![No] & vbCrLf
     msg = msg & "郵便番号：" & Parent![F_SUB_特定5講座].Form![郵便番号] & vbCrLf
@@ -76,9 +91,9 @@ Private Sub btn再注レター作成_Click()
     msg = msg & "商品名：" & Parent![F_SUB_特定5講座].Form![商品名称] & vbCrLf
     msg = msg & "再注レター返送期限：" & 再注レター返送期限 & vbCrLf
     msg = msg & "パスワード：" & パスワード & vbCrLf
-    
-    
-    If MsgBox(msg, vbYesNo + vbQuestion, "代引きレター印刷情報の登録") = vbYes Then
+
+
+    If MsgBox(msg, vbYesNo + vbQuestion, "再注レター印刷情報の登録") = vbYes Then
         Me!再注レター返送期限 = 再注レター返送期限
         Me!事業部 = 事業部
         Me!事業部TEL = 事業部TEL
@@ -105,16 +120,16 @@ Private Sub btn代引きレター作成_Click()
     Dim sql As String
     Dim 未成年FLG As Boolean
     Dim 重複件数 As Long
-    
+
     重複件数 = DCount("*", "T_代引きレター", "[No] = " & Me!No & " AND [印刷済みFLG] = False")
-    
+
     If 重複件数 > 0 Then
         MsgBox "このデータはすでに印刷待ちに登録されています。", vbExclamation, "登録重複"
         Exit Sub
     End If
-     
+
     代引きレター返送期限 = Date + 20 '今日日付＋20日
-    
+
     If Parent![F_SUB_特定5講座].Form![ショップ区分] = "通教" Then
         事業部 = "U-CAN"
         事業部TEL = "03-5388-6111"
@@ -122,7 +137,7 @@ Private Sub btn代引きレター作成_Click()
         事業部 = "ライフ＆カルチャー"
         事業部TEL = "0120-552-476"
     End If
-    
+
     If IsNull(Parent![F_SUB_特定5講座].Form![年齢]) Then
         未成年FLG = False
     ElseIf Parent![F_SUB_特定5講座].Form![年齢] < 18 Then
@@ -130,7 +145,7 @@ Private Sub btn代引きレター作成_Click()
     Else
         未成年FLG = False
     End If
-    
+
     msg = "【確認】次の情報で代引きレター印刷情報を登録します" & vbCrLf & vbCrLf
     msg = msg & "No：" & Parent![F_SUB_特定5講座].Form![No] & vbCrLf
     msg = msg & "郵便番号：" & Parent![F_SUB_特定5講座].Form![郵便番号] & vbCrLf
@@ -141,8 +156,8 @@ Private Sub btn代引きレター作成_Click()
     msg = msg & "事業部TEL：" & 事業部TEL & vbCrLf
     msg = msg & "商品名：" & Parent![F_SUB_特定5講座].Form![商品名称] & vbCrLf
     msg = msg & "代引きレター返送期限：" & 代引きレター返送期限 & vbCrLf
-    
-    
+
+
     If MsgBox(msg, vbYesNo + vbQuestion, "代引きレター印刷情報の登録") = vbYes Then
         Me!代引きレター返送期限 = 代引きレター返送期限
         Me!事業部 = 事業部
@@ -158,15 +173,27 @@ Private Sub btn代引きレター作成_Click()
     Else
         '何もしないでキャンセル
     End If
-    
+
 
 End Sub
 
 Private Sub Form_BeforeInsert(Cancel As Integer)
     Me![受注番号] = Parent![F_SUB_特定5講座].Form![受注番号]
     Me![商品コード] = Parent![F_SUB_特定5講座].Form![商品コード]
-    Me![登録日] = Now()
-    Me![更新日] = Now()
+    '登録日・更新日は日付のみで統一（時刻を含めない）
+    Me![登録日] = Date
+    Me![更新日] = Date
+End Sub
+
+' キー値（No）が空のまま保存されるのを防ぐ
+' （明細一覧が空の状態＝取込前の対象日などで直接入力した場合に発生する）
+Private Sub Form_BeforeUpdate(Cancel As Integer)
+    If Nz(Me!No) Or Nz(Me!受注番号) Or Nz(Me!商品コード) Then
+        MsgBox "明細一覧の行を選択してから入力してください。" & vbCrLf & _
+               "（入力内容は破棄されます）", vbExclamation, "保存できません"
+        Cancel = True
+        Me.Undo
+    End If
 End Sub
 
 ' 2つのコンボの状態を現在値に合わせて更新する（共通処理）
@@ -192,6 +219,7 @@ Private Sub UpdateLetterComboState()
     Me.再注レターの返送状況.Enabled = Not hasDaibiki
     Me.代引きレター返送状況.Enabled = Not hasSaichu
 End Sub
+
 Private Sub 再注レターの返送状況_AfterUpdate()
     UpdateLetterComboState
 End Sub
