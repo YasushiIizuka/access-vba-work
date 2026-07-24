@@ -33,7 +33,9 @@ Private Sub SetupRowFormat()
     Dim ctl As Control
     Dim fc As FormatCondition
 
-    For Each ctl In Me.Detail.Controls
+    'フォーム上の全コントロールから対象を型で絞る
+    '（Me.Detail はセクション名が「詳細」の日本語環境では使えないため）
+    For Each ctl In Me.Controls
         If ctl.ControlType = acTextBox Or ctl.ControlType = acComboBox Then
             '重複防止のため既存の条件付き書式を消してから設定
             ctl.FormatConditions.Delete
