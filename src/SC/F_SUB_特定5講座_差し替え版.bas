@@ -2,19 +2,46 @@
 ' 内容（2026-07-24 作り直し版）:
 '   1. Form_Load: 並べ替えを設定（未チェックが上・チェック済みが下、同グループ内は No 順）
 '      ※Yes/No 型は True=-1・False=0 のため、チェック済みを下にするには降順にする
-'   2. 選択_AfterUpdate: チェックを保存して再読込 → チェックした行が一番下に落ちる
+'   2. Form_Load: 条件付き書式をコードで設定（選択＝True の行を黒っぽいグレーに）
+'      ※各テキストボックスの既存の条件付き書式は毎回消してから設定し直す。
+'        デザイン時に手で付けた条件付き書式は残らないので、書式は全てこのコードで管理する。
+'        チェックボックス自体は条件付き書式が使えないため、選択列のセルだけは色が付かない
+'   3. 選択_AfterUpdate: チェックを保存して再読込 → チェックした行が一番下に落ちる
 '      ※選択チェックボックスの「更新後処理」が [イベント プロシージャ] に
 '        なっていることを確認すること
-'   3. Form_Current: チェック状況サブフォームへのリンク張り直し
+'   4. Form_Current: チェック状況サブフォームへのリンク張り直し
 '      （リンクの自動追従が働かないため。0件時は何もしない。
 '        0件時の表示制御はメインフォーム側の RequerySubForms が行う）
 Option Compare Database
 Option Explicit
 
+'チェック済み行の色（&HBBGGRR 形式。グレーは RGB(64,64,64)＝&H404040）
+Private Const CHECKED_BACK_COLOR As Long = &H404040   '黒っぽいグレー
+Private Const CHECKED_FORE_COLOR As Long = &HFFFFFF   '文字は白（黒背景でも読めるように）
+
 Private Sub Form_Load()
     '未チェック→チェック済みの順（チェック済みが下）、同グループ内は No 順
     Me.OrderBy = "[選択] DESC, [No]"
     Me.OrderByOn = True
+
+    'チェック済み行の色つけ（条件付き書式をコードで設定）
+    SetupRowFormat
+End Sub
+
+'選択＝True の行に色を付ける条件付き書式を全テキストボックスに設定する
+Private Sub SetupRowFormat()
+    Dim ctl As Control
+    Dim fc As FormatCondition
+
+    For Each ctl In Me.Detail.Controls
+        If ctl.ControlType = acTextBox Or ctl.ControlType = acComboBox Then
+            '重複防止のため既存の条件付き書式を消してから設定
+            ctl.FormatConditions.Delete
+            Set fc = ctl.FormatConditions.Add(acExpression, , "[選択]=True")
+            fc.BackColor = CHECKED_BACK_COLOR
+            fc.ForeColor = CHECKED_FORE_COLOR
+        End If
+    Next ctl
 End Sub
 
 Private Sub 選択_AfterUpdate()
