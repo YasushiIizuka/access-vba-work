@@ -3,8 +3,10 @@
 '   貼り付け後にデバッグ→コンパイルでエラーがないことを確認する。
 '
 ' 2026-07-24 の変更点（それ以外は客先の現行コードのまま）:
-'   1. Form_BeforeUpdate を新設: キー値（No）が空のまま保存しようとしたら
-'      分かりやすいメッセージを出して保存を中止（入力は破棄）
+'   1. Form_BeforeUpdate を新設: キー値（No・受注番号・商品コード）のいずれかが
+'      空のまま保存しようとしたら、メッセージを出して保存を中止（入力は破棄）
+'      ※判定は必ず Nz(〜, "") = "" の形にする。If Nz(Me!No) Or … と書くと
+'        値そのものの True/False 評価になり、正常データの保存まで止まる
 '   2. btn再注レター作成 の確認ダイアログのタイトルを「再注レター〜」に修正
 '      （「代引きレター〜」になっていた）
 '   3. Form_BeforeInsert の登録日・更新日を Now() → Date に変更
@@ -185,10 +187,10 @@ Private Sub Form_BeforeInsert(Cancel As Integer)
     Me![更新日] = Date
 End Sub
 
-' キー値（No）が空のまま保存されるのを防ぐ
+' キー値（No・受注番号・商品コード）が空のまま保存されるのを防ぐ
 ' （明細一覧が空の状態＝取込前の対象日などで直接入力した場合に発生する）
 Private Sub Form_BeforeUpdate(Cancel As Integer)
-    If IsNull(Me!No) Then
+    If Nz(Me!No, "") = "" Or Nz(Me!受注番号, "") = "" Or Nz(Me!商品コード, "") = "" Then
         MsgBox "明細一覧の行を選択してから入力してください。" & vbCrLf & _
                "（入力内容は破棄されます）", vbExclamation, "保存できません"
         Cancel = True
