@@ -15,9 +15,10 @@
 Option Compare Database
 Option Explicit
 
-'チェック済み行の色（&HBBGGRR 形式。グレーは RGB(64,64,64)＝&H404040）
-Private Const CHECKED_BACK_COLOR As Long = &H404040   '黒っぽいグレー
-Private Const CHECKED_FORE_COLOR As Long = &HFFFFFF   '文字は白（黒背景でも読めるように）
+'チェック済み行の色（&HBBGGRR 形式。グレーは RGB の3値を同じにする）
+'  もっと明るく: &HC0C0C0（その場合は文字を黒 &H0 に）／もっと暗く: &H404040
+Private Const CHECKED_BACK_COLOR As Long = &H808080   '中間のグレー RGB(128,128,128)
+Private Const CHECKED_FORE_COLOR As Long = &HFFFFFF   '文字は白
 
 Private Sub Form_Load()
     '未チェック→チェック済みの順（チェック済みが下）、同グループ内は No 順
