@@ -1,0 +1,10 @@
+Option Compare Database
+Option Explicit
+
+Private Sub Form_Current()
+    ' 単体で開いたときなど Parent が無い場合は何もしない
+    ' 詳細原因不明だが、再設定しないとサブフォームのほうが追従しない
+    On Error Resume Next
+    Parent![F_SUB_チェック状況].LinkMasterFields = _
+        Parent![F_SUB_チェック状況].LinkMasterFields
+End Sub
