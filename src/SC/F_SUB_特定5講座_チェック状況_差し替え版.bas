@@ -15,6 +15,10 @@
 '      （既に発行済みのパスワードとの整合を優先。6桁が要件なら For i = 1 To 6 に変更）
 '   5. コンボ排他制御（UpdateLetterComboState ほか）を含む。
 '      検証時に入れた Exit Sub は入っていない状態
+'   6. レター作成ボタン（再注・代引き）で、代入した内容を即時確定するよう修正
+'      （Me.Dirty=False と明細側の Dirty=False を追加。確定しないと編集中のまま
+'        残り、T_WORCS_Check・T_WORCS に書かれず印刷用クエリに出てこない。
+'        2026-07-31）
 Option Compare Database
 Option Explicit
 
@@ -100,8 +104,13 @@ Private Sub btn再注レター作成_Click()
         Me!事業部 = 事業部
         Me!事業部TEL = 事業部TEL
         Me!パスワード生成 = パスワード
+        'ここまでの入力を確定して T_WORCS_Check に保存する
+        '（確定しないと編集中のまま残り、印刷用クエリに反映されない）
+        If Me.Dirty Then Me.Dirty = False
         sql = "INSERT INTO [T_再注レター] ([No], [未成年FLG]) VALUES (" & Me!No & ", " & 未成年FLG & " );"
         Parent![F_SUB_特定5講座].Form![再注レター] = True
+        '明細側のフラグも確定して T_WORCS に保存する
+        If Parent![F_SUB_特定5講座].Form.Dirty Then Parent![F_SUB_特定5講座].Form.Dirty = False
         CurrentDb.Execute sql, dbFailOnError
         If 未成年FLG Then
             MsgBox "印刷情報を未成年（" & Parent![F_SUB_特定5講座].Form![年齢] & "歳）として登録しました"
@@ -164,8 +173,13 @@ Private Sub btn代引きレター作成_Click()
         Me!代引きレター返送期限 = 代引きレター返送期限
         Me!事業部 = 事業部
         Me!事業部TEL = 事業部TEL
+        'ここまでの入力を確定して T_WORCS_Check に保存する
+        '（確定しないと編集中のまま残り、印刷用クエリに反映されない）
+        If Me.Dirty Then Me.Dirty = False
         sql = "INSERT INTO [T_代引きレター] ([No], [未成年FLG]) VALUES (" & Me!No & ", " & 未成年FLG & " );"
         Parent![F_SUB_特定5講座].Form![代引きレター] = True
+        '明細側のフラグも確定して T_WORCS に保存する
+        If Parent![F_SUB_特定5講座].Form.Dirty Then Parent![F_SUB_特定5講座].Form.Dirty = False
         CurrentDb.Execute sql, dbFailOnError
         If 未成年FLG Then
             MsgBox "印刷情報を未成年（" & Parent![F_SUB_特定5講座].Form![年齢] & "歳）として登録しました"
