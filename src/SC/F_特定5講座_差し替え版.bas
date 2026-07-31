@@ -80,11 +80,24 @@ Private Sub Form_Load()
 End Sub
 
 
-'一覧サブフォームを再読込し、0件ならチェック状況サブフォームを隠す
+'一覧サブフォームを対象日で絞り込んで再読込し、0件ならチェック状況サブフォームを隠す
+'※絞り込みはクエリの抽出条件ではなくここでフィルタとして適用する。
+'  クエリに [Forms]![F_特定5講座]![cbo対象日] と書く方式は、ナビゲーション
+'  フォームに埋め込むと参照が解決できず「パラメーターの入力」が出るため廃止
+'  （2026-07-31。Q_特定5講座 の登録日の抽出条件は削除すること）
 Private Sub RequerySubForms()
     On Error GoTo ErrHandler
 
     Dim hasData As Boolean
+
+    If IsDate(Me!cbo対象日) Then
+        Me(SUB_LIST).Form.Filter = "[" & DATE_FIELD & "] = " & _
+            Format$(Me!cbo対象日, "\#yyyy\/mm\/dd\#")
+    Else
+        '対象日が未指定のときは何も表示しない
+        Me(SUB_LIST).Form.Filter = "1 = 0"
+    End If
+    Me(SUB_LIST).Form.FilterOn = True
 
     Me(SUB_LIST).Form.Requery
     hasData = (Me(SUB_LIST).Form.RecordsetClone.RecordCount > 0)
