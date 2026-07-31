@@ -33,6 +33,8 @@ Private Const DATE_FIELD As String = "登録日"
 Private Const DATE_SOURCE As String = "T_WORCS"
 
 Private Sub cbo対象日_AfterUpdate()
+    '選んだ日付を記憶（ナビゲーションのタブを離れてもセッション内は保持される）
+    TempVars("特定5講座_対象日") = Me!cbo対象日.Value
     RequerySubForms
 End Sub
 
@@ -74,8 +76,21 @@ Private Sub Form_Load()
         "SELECT DISTINCT [登録日] FROM [" & DATE_SOURCE & "] " & _
         "ORDER BY [登録日] DESC"
 
-    '初期表示は今日
-    Me!cbo対象日.Value = Date
+    '初期表示: このセッションで選んだ日付があればそれ、なければ今日
+    '（ナビゲーションフォームはタブを離れるとフォームを閉じるため、
+    '  タブを戻ったときに Form_Load が再実行される。TempVars に覚えて
+    '  おいた日付を復元することで、選択日がリセットされないようにする）
+    Dim lastDate As Variant
+    lastDate = Null
+    On Error Resume Next
+    lastDate = TempVars("特定5講座_対象日").Value
+    On Error GoTo 0
+
+    If IsDate(lastDate) Then
+        Me!cbo対象日.Value = lastDate
+    Else
+        Me!cbo対象日.Value = Date
+    End If
     RequerySubForms
 End Sub
 
