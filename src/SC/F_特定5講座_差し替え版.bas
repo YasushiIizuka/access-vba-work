@@ -91,7 +91,10 @@ Private Sub RequerySubForms()
     Dim hasData As Boolean
 
     If IsDate(Me!cbo対象日) Then
-        Me(SUB_LIST).Form.Filter = "[" & DATE_FIELD & "] = " & _
+        'フィールド名はテーブル名で修飾する（Q_特定5講座 は T_WORCS と
+        ' T_WORCS_Check を結合しており、両方に登録日があるため、修飾しないと
+        ' エラー3079「複数のテーブルを参照しました」になる）
+        Me(SUB_LIST).Form.Filter = "[" & DATE_SOURCE & "].[" & DATE_FIELD & "] = " & _
             Format$(Me!cbo対象日, "\#yyyy\/mm\/dd\#")
     Else
         '対象日が未指定のときは何も表示しない
