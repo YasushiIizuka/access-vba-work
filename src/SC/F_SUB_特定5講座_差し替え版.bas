@@ -17,10 +17,13 @@
 Option Compare Database
 Option Explicit
 
-'チェック済み行の色（&HBBGGRR 形式。グレーは RGB の3値を同じにする）
+'行の色（&HBBGGRR 形式）
 '  もっと明るく: &HC0C0C0（その場合は文字を黒 &H0 に）／もっと暗く: &H404040
-Private Const CHECKED_BACK_COLOR As Long = &H808080   '中間のグレー RGB(128,128,128)
-Private Const CHECKED_FORE_COLOR As Long = &HFFFFFF   '文字は白
+Private Const CHECKED_BACK_COLOR As Long = &H808080   '選択済み: 中間のグレー RGB(128,128,128)
+Private Const CHECKED_FORE_COLOR As Long = &HFFFFFF   '選択済みの文字は白
+Private Const DAIBIKI_BACK_COLOR As Long = &HC8FFFF   '代引きレター: 薄い黄色 RGB(255,255,200)
+Private Const SAICHU_BACK_COLOR As Long = &HC8C8FF    '再注レター: 薄い赤 RGB(255,200,200)
+Private Const BOTH_BACK_COLOR As Long = &HB4DCFF      '両方: 薄いオレンジ RGB(255,220,180)
 
 Private Sub Form_Load()
     '既定の並び順を設定
@@ -48,9 +51,22 @@ Private Sub SetupRowFormat()
         If ctl.ControlType = acTextBox Or ctl.ControlType = acComboBox Then
             '重複防止のため既存の条件付き書式を消してから設定
             ctl.FormatConditions.Delete
+
+            '※条件付き書式は「最初に一致した規則」が適用されるため、
+            '  優先度の高い順に追加する（選択グレー → 両方 → 代引き → 再注）
             Set fc = ctl.FormatConditions.Add(acExpression, , "[選択]=True")
             fc.BackColor = CHECKED_BACK_COLOR
             fc.ForeColor = CHECKED_FORE_COLOR
+
+            Set fc = ctl.FormatConditions.Add(acExpression, , _
+                "[代引きレター]=True And [再注レター]=True")
+            fc.BackColor = BOTH_BACK_COLOR
+
+            Set fc = ctl.FormatConditions.Add(acExpression, , "[代引きレター]=True")
+            fc.BackColor = DAIBIKI_BACK_COLOR
+
+            Set fc = ctl.FormatConditions.Add(acExpression, , "[再注レター]=True")
+            fc.BackColor = SAICHU_BACK_COLOR
         End If
     Next ctl
 End Sub
