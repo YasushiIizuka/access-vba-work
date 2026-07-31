@@ -199,7 +199,13 @@ Private Sub Form_BeforeUpdate(Cancel As Integer)
 End Sub
 
 ' 2つのコンボの状態を現在値に合わせて更新する（共通処理）
+' ※見た目の制御だけでデータには触れないため、Sub 全体をエラー無視にしている。
+'   フォーカスが乗ったコントロールの無効化（エラー2164）等がタイミング次第で
+'   起きうるが、無視しても次の行移動・コンボ操作で正しい状態に描き直される
+'   （保護しないと Form_Current 経由で「レコード移動時でエラー」ダイアログになる）
 Private Sub UpdateLetterComboState()
+    On Error Resume Next
+
     Dim hasDaibiki As Boolean
     Dim hasSaichu As Boolean
 
@@ -207,19 +213,21 @@ Private Sub UpdateLetterComboState()
     hasDaibiki = (Nz(Me.代引きレター返送状況.Value, "") <> "")
     hasSaichu = (Nz(Me.再注レターの返送状況.Value, "") <> "")
 
-    ' フォーカスが乗っているコントロールは無効化できない（エラー2164）ため、
-    ' これから無効化する側にフォーカスがある場合だけ相手側へ退避する
-    On Error Resume Next
+    ' これから無効化する側にフォーカスがある場合は相手側へ退避（2164対策）
     If hasDaibiki And Me.ActiveControl.Name = "再注レターの返送状況" Then
         Me.代引きレター返送状況.SetFocus
     End If
     If hasSaichu And Me.ActiveControl.Name = "代引きレター返送状況" Then
         Me.再注レターの返送状況.SetFocus
     End If
-    On Error GoTo 0
 
-    Me.再注レターの返送状況.Enabled = Not hasDaibiki
-    Me.代引きレター返送状況.Enabled = Not hasSaichu
+    '値が変わるときだけ設定（フォーカス絡みのエラー機会を減らす）
+    If Me.再注レターの返送状況.Enabled <> (Not hasDaibiki) Then
+        Me.再注レターの返送状況.Enabled = Not hasDaibiki
+    End If
+    If Me.代引きレター返送状況.Enabled <> (Not hasSaichu) Then
+        Me.代引きレター返送状況.Enabled = Not hasSaichu
+    End If
 End Sub
 
 Private Sub 再注レターの返送状況_AfterUpdate()
