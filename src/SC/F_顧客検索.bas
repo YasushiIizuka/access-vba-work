@@ -11,6 +11,8 @@
 '   サブフォームに適用する方式（ナビゲーションフォームに埋め込んでも動く）。
 '   一致方法は部分一致（入力値がどこかに含まれればヒット）、
 '   両方入力したときは OR（どちらかに一致すれば表示）。
+'   電話番号は3列（自宅または携帯／携帯／その他）、メールアドレスは3列
+'   （PC／モバイル／通販用）を入力1つで横断検索する。
 '
 ' ★★★ 客先での準備 ★★★
 '   1. サブフォーム用フォームを作る:
@@ -35,11 +37,17 @@
 Option Compare Database
 Option Explicit
 
-' ★検索対象のフィールド名（Q_顧客検索 は T_WORCS と T_WORCS_Check の結合クエリで
-'   同名フィールドがあるため、必ずテーブル名で修飾したまま使う。
-'   実際のフィールド名が違う場合はここだけ直せばよい）
-Private Const FLD_TEL As String = "[T_WORCS].[電話番号]"
-Private Const FLD_MAIL As String = "[T_WORCS].[メールアドレス]"
+' ★検索対象のフィールド名（カンマ区切りで列挙。入力1つで全列を横断検索する。
+'   Q_顧客検索 は T_WORCS と T_WORCS_Check の結合クエリで同名フィールドがあるため、
+'   必ずテーブル名で修飾したまま使う。列が増減したらここだけ直せばよい）
+Private Const FLD_TEL_LIST As String = _
+    "[T_WORCS].[電話番号_自宅または携帯]," & _
+    "[T_WORCS].[電話番号_携帯]," & _
+    "[T_WORCS].[電話番号_その他]"
+Private Const FLD_MAIL_LIST As String = _
+    "[T_WORCS].[メールアドレス_PC]," & _
+    "[T_WORCS].[メールアドレス_モバイル]," & _
+    "[T_WORCS].[通販用メールアドレス]"
 
 ' ★サブフォームコントロールの名前（フォーム名ではなく、メインフォーム上の
 '   サブフォームコントロールの「名前」プロパティを確認して合わせる）
@@ -57,16 +65,30 @@ Private Sub btn検索_Click()
     strTel = NormalizeTel(Nz(Me!txt電話番号.Value, ""))
     strMail = Trim$(Nz(Me!txtメールアドレス.Value, ""))
 
-    '電話番号: データ側もハイフン・空白を除去してから部分一致
+    Dim varFld As Variant
+    Dim strCond As String
+
+    '電話番号: 3列すべてを対象に、データ側もハイフン・空白を除去してから部分一致
     If Len(strTel) > 0 Then
-        strFilter = "Replace(Replace(Nz(" & FLD_TEL & ",''),'-',''),' ','') " & _
-            "Like '*" & EscapeLike(strTel) & "*'"
+        For Each varFld In Split(FLD_TEL_LIST, ",")
+            If Len(strCond) > 0 Then strCond = strCond & " OR "
+            strCond = strCond & _
+                "Replace(Replace(Nz(" & varFld & ",''),'-',''),' ','') " & _
+                "Like '*" & EscapeLike(strTel) & "*'"
+        Next
+        strFilter = "(" & strCond & ")"
     End If
 
-    'メールアドレス: 部分一致（両方入力されていれば OR＝どちらかに一致すれば表示）
+    'メールアドレス: 3列すべてを対象に部分一致
+    '（電話番号と両方入力されていれば OR＝どちらかに一致すれば表示）
     If Len(strMail) > 0 Then
+        strCond = ""
+        For Each varFld In Split(FLD_MAIL_LIST, ",")
+            If Len(strCond) > 0 Then strCond = strCond & " OR "
+            strCond = strCond & varFld & " Like '*" & EscapeLike(strMail) & "*'"
+        Next
         If Len(strFilter) > 0 Then strFilter = strFilter & " OR "
-        strFilter = strFilter & FLD_MAIL & " Like '*" & EscapeLike(strMail) & "*'"
+        strFilter = strFilter & "(" & strCond & ")"
     End If
 
     With Me(SUB_LIST).Form
