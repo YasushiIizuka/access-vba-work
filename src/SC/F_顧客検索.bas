@@ -4,6 +4,7 @@
 '   F_顧客検索（非連結のメインフォーム）
 '     ├ txt電話番号      … 検索条件（テキストボックス）
 '     ├ txtメールアドレス … 検索条件（テキストボックス）
+'     ├ txt市区郡番地    … 検索条件（テキストボックス）
 '     ├ btn検索          … 検索実行ボタン
 '     ├ btnリセット      … 条件リセットボタン
 '     └ F_SUB_顧客検索   … 検索結果一覧（サブフォームコントロール）
@@ -14,6 +15,8 @@
 '   両方入力したときは OR（どちらかに一致すれば表示）。
 '   電話番号は3列（自宅または携帯／携帯／その他）、メールアドレスは3列
 '   （PC／モバイル／通販用）を入力1つで横断検索する。
+'   市区郡番地は「市区郡」＋「町村番地」を連結した文字列への部分一致
+'   （2列の境目をまたぐ入力でもヒットする）。
 '
 ' ★★★ 客先での準備 ★★★
 '   1. サブフォーム用フォームを作る:
@@ -22,9 +25,10 @@
 '      ・一覧に出したい列だけ配置し、F_SUB_顧客検索 という名前で保存
 '   2. メインフォームを作る:
 '      ・新規フォーム（レコードソースは空のまま＝非連結）、F_顧客検索 で保存
-'      ・ヘッダー部にテキストボックス2つとボタン2つを配置（ウィザードはキャンセル）:
+'      ・ヘッダー部にテキストボックス3つとボタン2つを配置（ウィザードはキャンセル）:
 '          名前: txt電話番号        ラベル: 電話番号
 '          名前: txtメールアドレス  ラベル: メールアドレス
+'          名前: txt市区郡番地      ラベル: 市区郡番地
 '          名前: btn検索            標題: 検索
 '          名前: btnリセット        標題: リセット
 '      ・詳細部にサブフォームコントロールを配置し、
@@ -50,6 +54,10 @@ Private Const FLD_MAIL_LIST As String = _
     "[T_WORCS].[メールアドレス_モバイル]," & _
     "[T_WORCS].[通販用メールアドレス]"
 
+' ★住所検索の対象（市区郡＋町村番地を連結した文字列に対して部分一致する）
+Private Const FLD_ADDR As String = _
+    "Nz([T_WORCS].[市区郡],'') & Nz([T_WORCS].[町村番地],'')"
+
 ' ★サブフォームコントロールの名前（フォーム名ではなく、メインフォーム上の
 '   サブフォームコントロールの「名前」プロパティを確認して合わせる）
 Private Const SUB_LIST As String = "F_SUB_顧客検索"
@@ -60,11 +68,13 @@ Private Sub btn検索_Click()
 
     Dim strTel As String
     Dim strMail As String
+    Dim strAddr As String
     Dim strFilter As String
 
     '入力値を整える（電話番号はハイフン・空白を除去して数字だけで比較する）
     strTel = NormalizeTel(Nz(Me!txt電話番号.Value, ""))
     strMail = Trim$(Nz(Me!txtメールアドレス.Value, ""))
+    strAddr = Trim$(Nz(Me!txt市区郡番地.Value, ""))
 
     Dim varFld As Variant
     Dim strCond As String
@@ -93,6 +103,14 @@ Private Sub btn検索_Click()
         strFilter = strFilter & "(" & strCond & ")"
     End If
 
+    '市区郡番地: 市区郡＋町村番地を連結して部分一致
+    '（2列の境目をまたぐ「○○区△△町…」のような入力でもヒットする）
+    If Len(strAddr) > 0 Then
+        If Len(strFilter) > 0 Then strFilter = strFilter & " OR "
+        strFilter = strFilter & _
+            "(" & FLD_ADDR & " Like '*" & EscapeLike(strAddr) & "*')"
+    End If
+
     With Me(SUB_LIST).Form
         If Len(strFilter) > 0 Then
             .Filter = strFilter
@@ -113,6 +131,7 @@ End Sub
 Private Sub btnリセット_Click()
     Me!txt電話番号.Value = Null
     Me!txtメールアドレス.Value = Null
+    Me!txt市区郡番地.Value = Null
     Me(SUB_LIST).Form.FilterOn = False
     Me!txt電話番号.SetFocus
 End Sub
