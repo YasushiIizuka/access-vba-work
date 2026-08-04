@@ -9,6 +9,8 @@
 '     └ F_SUB_顧客検索   … 検索結果一覧（サブフォームコントロール）
 '   検索は Q_顧客検索 の抽出条件ではなく、コードで Filter を組み立てて
 '   サブフォームに適用する方式（ナビゲーションフォームに埋め込んでも動く）。
+'   一致方法は部分一致（入力値がどこかに含まれればヒット）、
+'   両方入力したときは OR（どちらかに一致すれば表示）。
 '
 ' ★★★ 客先での準備 ★★★
 '   1. サブフォーム用フォームを作る:
@@ -61,9 +63,9 @@ Private Sub btn検索_Click()
             "Like '*" & EscapeLike(strTel) & "*'"
     End If
 
-    'メールアドレス: 部分一致（両方入力されていれば AND）
+    'メールアドレス: 部分一致（両方入力されていれば OR＝どちらかに一致すれば表示）
     If Len(strMail) > 0 Then
-        If Len(strFilter) > 0 Then strFilter = strFilter & " AND "
+        If Len(strFilter) > 0 Then strFilter = strFilter & " OR "
         strFilter = strFilter & FLD_MAIL & " Like '*" & EscapeLike(strMail) & "*'"
     End If
 
