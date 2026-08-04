@@ -9,7 +9,8 @@
 '     └ F_SUB_顧客検索   … 検索結果一覧（サブフォームコントロール）
 '   検索は Q_顧客検索 の抽出条件ではなく、コードで Filter を組み立てて
 '   サブフォームに適用する方式（ナビゲーションフォームに埋め込んでも動く）。
-'   一致方法は部分一致（入力値がどこかに含まれればヒット）、
+'   一致方法は電話番号が前方一致（09 → 090… がヒット）、
+'   メールアドレスが部分一致（入力値がどこかに含まれればヒット）、
 '   両方入力したときは OR（どちらかに一致すれば表示）。
 '   電話番号は3列（自宅または携帯／携帯／その他）、メールアドレスは3列
 '   （PC／モバイル／通販用）を入力1つで横断検索する。
@@ -68,13 +69,14 @@ Private Sub btn検索_Click()
     Dim varFld As Variant
     Dim strCond As String
 
-    '電話番号: 3列すべてを対象に、データ側もハイフン・空白を除去してから部分一致
+    '電話番号: 3列すべてを対象に前方一致（09 → 090… がヒット）。
+    '現データにハイフンは入っていないが、保険としてデータ側の除去処理は残す
     If Len(strTel) > 0 Then
         For Each varFld In Split(FLD_TEL_LIST, ",")
             If Len(strCond) > 0 Then strCond = strCond & " OR "
             strCond = strCond & _
                 "Replace(Replace(Nz(" & varFld & ",''),'-',''),' ','') " & _
-                "Like '*" & EscapeLike(strTel) & "*'"
+                "Like '" & EscapeLike(strTel) & "*'"
         Next
         strFilter = "(" & strCond & ")"
     End If
